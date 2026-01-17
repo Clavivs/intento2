@@ -1,0 +1,28 @@
+name: Actualizar Horóscopo
+on:
+  workflow_dispatch: # Esto activa un botón para que lo pruebes manualmente
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      
+      - name: Instalar dependencias
+        run: npm install @google/genai
+
+      - name: Ejecutar script
+        run: node update.js
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Guardar cambios
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m "Horóscopo actualizado" || echo "No hay cambios"
+          git push
