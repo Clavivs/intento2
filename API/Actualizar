@@ -1,15 +1,35 @@
-Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
-To eliminate this warning, add "type": "module" to /home/runner/work/intento2/intento2/package.json.
-(Use `node --trace-warnings ...` to show where the warning was created)
-file:///home/runner/work/intento2/intento2/update.js:11
-  throw new Error("GEMINI_API_KEY no está configurada en los Secrets de GitHub.");
-        ^
+import { GoogleGenAI } from '@google/genai'; // O la librería de Gemini que use
+import { exec } from 'child_process';
 
-Error: GEMINI_API_KEY no está configurada en los Secrets de GitHub.
-    at file:///home/runner/work/intento2/intento2/update.js:11:9
-    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
-    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
-    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+// Es MUY importante que su clave API sea una variable de entorno en Vercel
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const VERCEL_DEPLOY_HOOK = process.env.VERCEL_DEPLOY_HOOK; 
 
-Node.js v20.19.6
-Error: Process completed with exit code 1.
+// *Si usa Next.js en /pages/api, o una función Serverless genérica*
+export default async function handler(req, res) {
+  try {
+    // 1. **Verificación de seguridad** (opcional, pero recomendada)
+    // Puede verificar el header 'user-agent' o un CRON_SECRET si lo configura
+    // para asegurarse de que solo Vercel está llamando este endpoint.
+
+    // 2. **Generar el horóscopo del día siguiente con Gemini**
+    const manana = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // Aquí iría su lógica para llamar a Gemini y obtener el horóscopo
+    // ... Código que llama a Gemini y guarda el resultado ...
+    console.log(`Horóscopo de ${manana} generado y guardado.`);
+
+    // 3. **Activar un nuevo Vercel Deploy (reconstrucción)**
+    // Esto asegura que la web estática se actualice con los nuevos datos.
+    if (VERCEL_DEPLOY_HOOK) {
+        await fetch(VERCEL_DEPLOY_HOOK, { method: 'POST' });
+        console.log('Deploy de Vercel activado.');
+    } else {
+        console.error('VERCEL_DEPLOY_HOOK no configurado.');
+    }
+
+    res.status(200).json({ message: 'Actualización y Reconstrucción diarias completadas.' });
+  } catch (error) {
+    console.error('Error al ejecutar la Cron Job:', error);
+    res.status(500).json({ error: 'Fallo en la actualización.' });
+  }
+}
